@@ -1,0 +1,20 @@
+{
+  "model": "opus",
+  "permissions": {
+    "deny": [
+      "Edit(//home/lebih/projects/Goodlock/Goodlock-back*/**)",
+      "Edit(//home/lebih/projects/Goodlock/Goodlock-app*/**)",
+      "Edit(//home/lebih/projects/Goodlock/Goodlock-specs/**)",
+      "Read(//home/lebih/projects/Goodlock/Goodlock-back*/src/**)",
+      "Read(//home/lebih/projects/Goodlock/Goodlock-back*/tests/**)",
+      "Read(//home/lebih/projects/Goodlock/Goodlock-app*/lib/**)",
+      "Read(//home/lebih/projects/Goodlock/Goodlock-app*/test/**)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": ["git push *", "gh pr *"]
+  }
+}
