@@ -8,13 +8,19 @@
       "Read(//home/lebih/projects/Goodlock/Goodlock-back*/src/**)",
       "Read(//home/lebih/projects/Goodlock/Goodlock-back*/tests/**)",
       "Read(//home/lebih/projects/Goodlock/Goodlock-app*/lib/**)",
-      "Read(//home/lebih/projects/Goodlock/Goodlock-app*/test/**)"
+      "Read(//home/lebih/projects/Goodlock/Goodlock-app*/test/**)",
+      "Read(//home/lebih/projects/Goodlock/Goodlock-back*/dist/**)"
     ]
   },
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
-    "excludedCommands": ["git push *", "gh pr *"]
+    "excludedCommands": [
+      "git push *",
+      "gh pr *",
+      "npm test",
+      "npm run test*"
+    ]
   }
 }
