@@ -14,6 +14,16 @@ This repo holds the acceptance tests of Goodlock: the rules of the rules referen
 ## Layout
 
 - `back/`: the acceptance tests of Goodlock-back (TypeScript, Jest), one file per chapter of the rules reference.
+- `back/harness/`: runs the build of the back as a Node process on a disposable Postgres, signs players up and connects them. `contract.ts` names the parts of the contract that `protocol.schema.json` does not hold (HTTP auth, socket handshake, client events).
+
+## Commands
+
+In `back/`. The tests need Docker running and a build of the back under test (`npm run build` in it). `GOODLOCK_BACK_DIR` picks that checkout (default `../Goodlock-back`), for example the worktree of `feat/<topic>`.
+
+```bash
+npm test            # all the acceptance tests
+npm run typecheck   # tsc on the tests and the harness
+```
 
 ## Workflow
 
