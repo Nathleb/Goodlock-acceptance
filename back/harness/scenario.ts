@@ -5,7 +5,7 @@ import { Player } from './player';
 import { ServerProcess } from './server';
 
 export interface ScenarioOptions {
-  /** The indices the dice draw, in order (`DICE_SCRIPT`). Random dice when absent. */
+  /** The indices the dice draw, in order (`DICE_SCRIPT`, see contract.ts). Random dice when absent. */
   diceScript?: readonly number[];
 }
 
@@ -35,9 +35,15 @@ export class Scenario {
 
   /** Disconnects every player and stops the server; fails if the server broke protocol.schema.json. */
   async close(): Promise<void> {
-    for (const player of this.players) player.disconnect();
-    await this.server.stop();
-    const violations = this.players.flatMap((player) => player.violations);
-    if (violations.length > 0) throw new Error(`The server broke its contract:\n${violations.join('\n')}`);
+    try {
+      for (const player of this.players) player.disconnect();
+      await this.server.stop();
+    } finally {
+      const violations = this.players.flatMap((player) => player.violations);
+      if (violations.length > 0) {
+        // Thrown from finally on purpose: a broken contract outweighs a failed stop().
+        throw new Error(`The server broke its contract:\n${violations.join('\n')}\n\nServer logs:\n${this.server.logs()}`);
+      }
+    }
   }
 }

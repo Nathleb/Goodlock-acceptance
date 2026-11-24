@@ -19,15 +19,15 @@ describe('acceptance harness', () => {
     const guest = await scenario!.newPlayer();
 
     owner.emit('createRoom', {});
-    const created = await owner.waitFor('roomCreated');
+    const created = await owner.next('roomCreated');
     guest.emit('joinRoom', { roomId: created.roomId });
 
     const bothSeated = (room: RoomDTO): boolean => room.roomId === created.roomId && room.players.length === 2;
-    const [seenByOwner, seenByGuest] = await Promise.all([
-      owner.waitFor('roomUpdated', bothSeated),
-      guest.waitFor('roomUpdated', bothSeated),
-    ]);
-    expect(seenByOwner.players.map((p) => p.playerId).sort()).toEqual([owner.sessionId, guest.sessionId].sort());
-    expect(seenByGuest).toEqual(seenByOwner);
+    const both = [owner.sessionId, guest.sessionId].sort();
+    for (const player of [owner, guest]) {
+      const room = await player.next('roomUpdated', bothSeated);
+      expect(room.players.map((p) => p.playerId).sort()).toEqual(both);
+      expect(player.all('error')).toEqual([]);
+    }
   });
 });

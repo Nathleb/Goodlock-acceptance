@@ -18,7 +18,7 @@ This repo holds the acceptance tests of Goodlock: the rules of the rules referen
 
 ## Commands
 
-In `back/`. The tests need Docker running and a build of the back under test (`npm run build` in it). `GOODLOCK_BACK_DIR` picks that checkout (default `../Goodlock-back`), for example the worktree of `feat/<topic>`.
+In `back/`. The tests need Docker running and a build of the back under test (`npm run build` in it). `GOODLOCK_BACK_DIR` picks that checkout by absolute path (default: the `Goodlock-back` next to this repo), for example the worktree of `feat/<topic>`.
 
 ```bash
 npm test            # all the acceptance tests

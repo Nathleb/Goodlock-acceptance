@@ -2,17 +2,21 @@ import { ChildProcess, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createServer, connect } from 'node:net';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { backDir, backEntryPoint } from './back';
+import { backDir, backEntryPoint, isolatedEnv } from './back';
 
 export interface ServerOptions {
   databaseUrl: string;
   jwtAccessSecret: string;
-  /** The indices the dice draw, in order (`DICE_SCRIPT`). Random dice when absent. */
+  /** The indices the dice draw, in order (`DICE_SCRIPT`, see contract.ts). Random dice when absent. */
   diceScript?: readonly number[];
 }
 
 const BOOT_TIMEOUT_MS = 30_000;
 const STOP_TIMEOUT_MS = 10_000;
+
+/** Every server still running in this process: killed if the process exits without stopping them. */
+const running = new Set<ChildProcess>();
+process.once('exit', () => running.forEach((child) => child.kill('SIGKILL')));
 
 /** A build of Goodlock-back running as a Node process of its own. */
 export class ServerProcess {
@@ -22,6 +26,9 @@ export class ServerProcess {
     private readonly child: ChildProcess,
     readonly port: number,
   ) {
+    running.add(child);
+    child.once('exit', () => running.delete(child));
+    child.once('error', (error) => (this.output += `\n[harness] ${error.message}\n`));
     child.stdout?.on('data', (chunk: Buffer) => (this.output += chunk.toString()));
     child.stderr?.on('data', (chunk: Buffer) => (this.output += chunk.toString()));
   }
@@ -57,8 +64,13 @@ export class ServerProcess {
   async stop(): Promise<void> {
     if (this.hasExited()) return;
     const exited = once(this.child, 'exit');
+    const timeout = new AbortController();
     this.child.kill('SIGTERM');
-    const stopped = await Promise.race([exited.then(() => true), sleep(STOP_TIMEOUT_MS).then(() => false)]);
+    const stopped = await Promise.race([
+      exited.then(() => true),
+      sleep(STOP_TIMEOUT_MS, false, { signal: timeout.signal }).catch(() => true),
+    ]);
+    timeout.abort();
     if (!stopped) {
       this.child.kill('SIGKILL');
       await exited;
@@ -72,37 +84,28 @@ export class ServerProcess {
   private async waitUntilAccepting(): Promise<void> {
     const deadline = Date.now() + BOOT_TIMEOUT_MS;
     while (Date.now() < deadline) {
+      const accepting = await acceptsConnections(this.port);
+      // Checked after the probe too: the port may belong to another process if ours failed to bind it.
       if (this.hasExited()) {
         throw new Error(`Goodlock-back exited during boot (code ${this.child.exitCode}):\n${this.output}`);
       }
-      if (await acceptsConnections(this.port)) return;
+      if (accepting) return;
       await sleep(100);
     }
     throw new Error(`Goodlock-back did not accept connections within ${BOOT_TIMEOUT_MS} ms:\n${this.output}`);
   }
 }
 
-/**
- * The whole environment of the server, built from scratch so nothing leaks from the caller's.
- * The back may load a `.env` from its checkout, which never overrides a variable already set:
- * every variable of its `.env.example` is therefore set here, empty when the scenario leaves it unset.
- */
 function serverEnv(options: ServerOptions, port: number): NodeJS.ProcessEnv {
-  return {
-    PATH: process.env.PATH,
+  return isolatedEnv({
     NODE_ENV: 'test',
     NO_COLOR: '1',
     PORT: String(port),
     DATABASE_URL: options.databaseUrl,
-    POSTGRES_DB: '',
-    POSTGRES_USER: '',
-    POSTGRES_PASSWORD: '',
     JWT_ACCESS_SECRET: options.jwtAccessSecret,
     JWT_ACCESS_EXPIRES_IN: '15m',
-    CORS_ORIGIN: '',
-    DICE_SEED: '',
     DICE_SCRIPT: options.diceScript?.join(',') ?? '',
-  };
+  });
 }
 
 async function freePort(): Promise<number> {
