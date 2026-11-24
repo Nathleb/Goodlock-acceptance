@@ -1,0 +1,3 @@
+node_modules/
+# Generated from the protocol.schema.json of the back under test by `npm run protocol:types`
+harness/protocol.generated.ts

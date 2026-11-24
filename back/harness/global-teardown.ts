@@ -1,0 +1,6 @@
+import './global-setup';
+
+export default async function globalTeardown(): Promise<void> {
+  await globalThis.acceptancePostgres?.stop();
+  globalThis.acceptancePostgres = undefined;
+}
