@@ -1,0 +1,25 @@
+{
+  "name": "goodlock-acceptance-back",
+  "private": true,
+  "description": "Acceptance tests of Goodlock-back, written against its public contract.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "protocol:types": "json2ts --input \"${GOODLOCK_BACK_DIR:-../../Goodlock-back}/protocol/protocol.schema.json\" --output harness/protocol.generated.ts --additionalProperties false",
+    "pretest": "npm run protocol:types",
+    "test": "jest",
+    "pretypecheck": "npm run protocol:types",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.2.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.20.5",
+    "ajv": "^8.20.0",
+    "dotenv": "^17.4.2",
+    "jest": "^30.5.2",
+    "json-schema-to-typescript": "^16.0.0",
+    "socket.io-client": "^4.8.4",
+    "ts-jest": "^29.4.15",
+    "typescript": "^5.9.3"
+  }
+}
